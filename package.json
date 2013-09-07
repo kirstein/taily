@@ -1,0 +1,22 @@
+{
+  "name": "taily",
+  "version": "0.0.1",
+  "description": "tail -f implementation in good old javascript",
+  "homepage": "http://github.com/kirstein/taily",
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kirstein/taily.git"
+  },
+  "author": "Mikk Kirstein",
+  "license": "MIT",
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-mocha-test": "~0.6.3",
+    "grunt-contrib-watch": "~0.5.3",
+    "should": "~1.2.2",
+    "sinon": "~1.7.3"
+  }
+}
