@@ -2,7 +2,8 @@
 'use strict';
 
 var fs    = require('fs'),
-    _     = require('lodash');
+    _     = require('lodash'),
+    async = require('async');
 
 function isDef(data) {
   return typeof data !== "undefined" && data !== null;
@@ -68,6 +69,10 @@ Taily.prototype.off = function(event, callback) {
   return this;
 };
 
+Taily.prototype.isOpen = function() {
+  return this._started && isDef(this._fd);
+};
+
 Taily.prototype.open = function() {
   var self = this;
 
@@ -78,7 +83,6 @@ Taily.prototype.open = function() {
     this._started = true;
 
     this._open(function() {
-
       // stat the file first and get its size
       // we need it to calculate how much we have to read from the change
       self._stat(function(stat) {
@@ -120,12 +124,40 @@ Taily.prototype._open = function(callback) {
   });
 };
 
+Taily.prototype._close = function(callback) {
+  var self = this;
+  fs.close(this._fd, function(err) {
+    if (err) {
+      self._trigger('error', err);
+    }
+
+    callback();
+  });
+};
+
 Taily.prototype.close = function() {
+  var self = this;
+
   // Do not throw when one is trying to close a already open taily
   // consider this normal behaviour
   if (this._started) {
-    this._trigger('end');
     this._started = false;
+
+    // Unwatch the file
+    if (this._watcher) {
+      fs.unwatchFile(this.file, this._watcher);
+      this._watcher = null;
+    }
+
+    // If its open then lets close it.
+    if (this._fd) {
+        this._close(function() {
+          self._trigger('end');
+          self._fd      = null;
+        });
+    } else {
+      self._trigger('end');
+    }
   }
 };
 
@@ -140,17 +172,26 @@ Taily.prototype._trigger = function(event, payload) {
 Taily.prototype._watchFileChanges = function(callback) {
   var self = this;
 
-  this._watcher = fs.watchFile(this.file, {
-    persistent : true,
-    interval   : this.options.interval
-  }, function() {
+  // Save the watcher instance
+  this._watcher = function() {
     self._trigger('change');
     callback();
-  });
+  };
+
+  fs.watchFile(this.file, {
+    persistent : true,
+    interval   : this.options.interval
+  }, this._watcher);
 };
 
 Taily.prototype._stat = function(callback) {
   var self = this;
+
+  // If for some reason the taily was closed then lets close the file
+  if (!self._started) {
+    self.close();
+    return;
+  }
 
   fs.fstat(this._fd, function(err, stat) {
     if (err) {

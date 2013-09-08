@@ -13,6 +13,7 @@ function append(data) {
     flags: "a"
   });
   stream.end(data);
+  return stream;
 }
 
 beforeEach(function() {
@@ -27,8 +28,11 @@ describe ('reading it', function() {
   });
 
   afterEach(function(done) {
-    res.on('end', done);
-    res.close();
+    if (res.isOpen()) {
+      res.on('end', done).close();
+    } else {
+      done();
+    }
   });
 
   it ('should open the file', function(done) {
@@ -61,6 +65,28 @@ describe ('reading it', function() {
     res.open();
 
     append('data');
+  });
+
+  it ('should figure out if the contents some of file has been removed', function(done) {
+    this.timeout(3000);
+    res.on('error', function(error) {
+      done(error);
+    });
+
+    res.open();
+
+    append('data to append').on('finish', function() {
+      fs.writeFileSync(FIXTURE, '');
+
+      res.on('data', function(data) {
+        data.should.eql('yolo');
+        done();
+      });
+
+      append('yolo').on('finish', function() {
+        console.log('wrote to file');
+      });
+    });
   });
 });
 

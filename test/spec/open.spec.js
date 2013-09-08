@@ -63,9 +63,13 @@ describe ('#open', function() {
   }));
 
 
-  it ('should trigger a end event if open receives an error', sinon.test(function(done) {
-    var stub = this.stub(fs, 'open', function(path, flag, callback) {
+  it ('should trigger a end event if open receives an error', sinon.test(function() {
+    this.stub(fs, 'open', function(path, flag, callback) {
       callback('test error', null);
+    });
+
+    this.stub(fs, 'close', function(fd, callback) {
+      callback();
     });
 
     var spy = sinon.spy();
@@ -100,22 +104,6 @@ describe ('#open', function() {
     });
 
     res.open();
-  }));
-
-  it ('should open watching the file if open and stating was sucessful', sinon.test(function() {
-    this.stub(fs, 'open', function(path, flag, callback) {
-      callback(null, 'fd');
-    });
-
-    this.stub(fs, 'fstat', function(file, callback) {
-      callback(null, {});
-    });
-
-    this.stub(fs, 'watchFile');
-
-    res.open();
-
-    fs.watchFile.called.should.be.ok;
   }));
 
   it ('should open watching the files with defined interval param', sinon.test(function() {
@@ -172,6 +160,7 @@ describe ('#open', function() {
   }));
 
   it ('should write the new length if the stated length is smaller than the previous one', sinon.test(function() {
+    res._started = true;
     res._bytes = 500;
     this.stub(fs, 'fstat', function(fd, cb) {
       cb(null, { size: 200 });
@@ -189,6 +178,8 @@ describe ('#open', function() {
     this.stub(fs, 'open', function(filename, flag, callback) {
       callback(null, 'fd');
     });
+
+    this.stub(res, 'close');
 
     this.stub(fs, 'fstat', function(fd, callback) {
       callback('fstat error');
@@ -210,6 +201,10 @@ describe ('#open', function() {
 
     this.stub(fs, 'open', function(filename, flag, callback) {
       callback(null, 'fd');
+    });
+
+    this.stub(fs, 'close', function(fd, callback) {
+      callback(null);
     });
 
     this.stub(fs, 'fstat', function(fd, callback) {
