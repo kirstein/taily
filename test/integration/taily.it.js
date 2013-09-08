@@ -66,27 +66,5 @@ describe ('reading it', function() {
 
     append('data');
   });
-
-  it ('should figure out if the contents some of file has been removed', function(done) {
-    this.timeout(3000);
-    res.on('error', function(error) {
-      done(error);
-    });
-
-    res.open();
-
-    append('data to append').on('finish', function() {
-      fs.writeFileSync(FIXTURE, '');
-
-      res.on('data', function(data) {
-        data.should.eql('yolo');
-        done();
-      });
-
-      append('yolo').on('finish', function() {
-        console.log('wrote to file');
-      });
-    });
-  });
 });
 
