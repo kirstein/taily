@@ -48,6 +48,7 @@ describe ('reading it', function() {
   });
 
   it ('should return the new data after files change', function(done) {
+    this.timeout(8000);
     var changeSpy = sinon.spy();
     res.on('error', function(error) {
       done(error);
